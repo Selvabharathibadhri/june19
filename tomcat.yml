@@ -1,0 +1,111 @@
+---
+- name: Install Apache Tomcat
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the necessary dependencies are installed
+      apt:
+        name:
+          - wget
+          - tar
+        state: present
+        update_cache: yes
+
+    - name: Download Apache Tomcat tarball
+      get_url:
+        url: "https://downloads.apache.org/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz"
+        dest: "/tmp/apache-tomcat-10.1.26.tar.gz"
+
+    - name: Create Tomcat directory
+      file:
+        path: "/opt/tomcat"
+        state: directory
+
+    - name: Extract Tomcat tarball
+      unarchive:
+        src: "/tmp/apache-tomcat-10.1.26.tar.gz"
+        dest: "/opt/tomcat"
+        remote_src: yes
+
+    - name: Set ownership of the Tomcat directory
+      file:
+        path: "/opt/tomcat"
+        state: directory
+        owner: tomcat
+        group: tomcat
+        recurse: yes
+    - name: Set permissions on the Tomcat directory
+      file:
+        path: "/opt/tomcat"
+        state: directory
+        mode: '0755'
+        recurse: yes
+
+    - name: Clean up the tarball
+      file:
+        path: "/tmp/apache-tomcat-10.1.26.tar.gz"
+        state: absent
+
+    - name: find al the shell files
+      find:
+        paths: /opt/tomcat/apache-tomcat-10.1.26/bin
+        pattern: '*.sh'
+        recurse: yes
+      register: shell_files
+
+    - name: change permissions to execute
+      file:
+        path: "{{ item.path }}"
+        owner: "{{ user }}"
+        group:  "{{ group }}"
+        mode: "755"
+      loop: "{{ shell_files.files }}"
+    - name: create tomcat application accounts
+      ansible.builtin.template:
+       src: templates/tomcat-users.xml.j2
+       dest: "/opt/tomcat/apache-tomcat-10.1.26/conf/tomcat-users.xml"
+       owner: "{{ user }}"
+       group:  "{{ group }}"
+       mode: "0600"
+      notify:
+       - restart tomcat
+
+    - name: allow remote hosts for manager
+      ansible.builtin.template:
+       src: templates/manager-context.xml.j2
+       dest: "/opt/tomcat/apache-tomcat-10.1.26/webapps/manager/META-INF/context.xml"
+       owner: "{{ user }}"
+       group:  "{{ group }}"
+       mode: "0640"
+      notify:
+      - restart tomcat
+
+    - name: allow remote hosts for host-manager
+      ansible.builtin.template:
+       src: templates/hostmanager-context.xml.j2
+       dest: "/opt/tomcat/apache-tomcat-10.1.26/webapps/host-manager/META-INF/context.xml"
+       owner: "{{ user }}"
+       group:  "{{ group }}"
+       mode: "0640"
+      notify:
+      - restart tomcat
+    - name: start tomcat service
+      ansible.builtin.template:
+       src: templates/tomcat.service.j2
+       dest: /etc/systemd/system/tomcat.service
+      notify:
+       - start tomcat
+
+  handlers:
+  - name: start tomcat
+    ansible.builtin.service:
+      name: tomcat
+      enabled: yes
+      daemon_reload: yes
+      state: started
+  - name: restart tomcat
+    ansible.builtin.service:
+      name: tomcat
+      enabled: yes
+      daemon_reload: yes
+      state: restarted
