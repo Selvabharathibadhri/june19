@@ -1,0 +1,30 @@
+---
+- name: Install Maven
+  hosts: all
+  user: ansible
+  become: true
+
+  tasks:
+  - name: Update package cache
+    apt:
+      update_cache: yes
+
+  - name: Install Git
+    apt:
+        name: git
+        state: latest
+
+  - name: Add Maven repository
+    apt_repository:
+      repo: 'ppa:ubuntu-toolchain-r/test'
+      state: present
+
+  - name: Install Maven
+    apt:
+      name: maven
+      state: latest
+
+  - name: Install OpenJDK 8
+    apt:
+      name: openjdk-8-jdk
+      state: present
