@@ -1,0 +1,50 @@
+---
+- name: Install Jenkins
+  hosts: s2
+  become: yes
+
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install Java (Jenkins dependency)
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Add Jenkins repository key
+      apt_key:
+        url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+        state: present
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: deb http://pkg.jenkins.io/debian-stable binary/
+        state: present
+
+    - name: Update apt cache after adding Jenkins repo
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+    - name: Ensure Jenkins is started and enabled on boot
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+
+    - name: Open firewall port for Jenkins (default port 8080)
+      ufw:
+        rule: allow
+        port: 9090
+        proto: tcp
+
+    - name: Ensure firewall is enabled
+      ufw:
+        state: enabled
+        policy: allow
