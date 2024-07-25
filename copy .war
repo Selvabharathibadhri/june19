@@ -1,0 +1,38 @@
+---
+- name: Fetch .war file from remote server
+  hosts: s3
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Check if .war file exists on the remote server
+      stat:
+        path: /home/jenkins/workspace/demos3/target/bharathi.war
+      register: war_file
+
+    - name: Fetch the .war file if it exists
+      fetch:
+        src: /home/jenkins/workspace/demos3/target/bharathi.war
+        dest: /tmp/
+        flat: yes
+      when: war_file.stat.exists
+
+- name: Ensure directory exists and move .war file on Ansible controller
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Ensure the destination directory exists
+      file:
+        path: /opt/tomcat/apache-tomcat-10.1.26/webapps
+        state: directory
+        mode: '0755'
+        owner: tomcat
+        group: tomcat
+
+    - name: Check if the fetched .war file exists
+      stat:
+        path: /tmp/bharathi.war
+      register: fetched_war_file
+    - name: Move .war file to the desired location
+      command: mv /tmp/bharathi.war /opt/tomcat/apache-tomcat-10.1.26/webapps/bharathi.war
+      become: yes
+      when: fetched_war_file.stat.exists
