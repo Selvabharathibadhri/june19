@@ -1,0 +1,12 @@
+---
+java_package_name: openjdk-11-jdk
+user: tomcat
+group: tomcat
+home_dir: /opt/tomcat
+user_shell: /bin/false
+tomcat_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz"
+home_dir_after_extract: /opt/tomcat/apache-tomcat-10.1.26
+tomcat_version: "10.1.26"
+tomcat_user: admin
+tonmcat_password: admin
+tomcat_allow_ips: ".*"
